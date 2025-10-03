@@ -11,10 +11,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import com.example.todo.model.dto.UserLoginDTO;
 import com.example.todo.model.dto.UserRegisterDTO;
 import com.example.todo.model.response.ApiResponse;
+import com.example.todo.model.vo.UserLoginVO;
 import com.example.todo.network.ApiService;
 import com.example.todo.network.RetrofitClient;
+import com.example.todo.storage.SharedPreferencesManager;
 import com.example.todo.utils.Debouncer;
 import com.example.todo.utils.NetworkUtils;
 import com.example.todo.utils.Validator;
@@ -48,6 +51,7 @@ public class RegisterActivity extends AppCompatActivity {
     private TextView versionInfo;
 
     // 业务组件
+    private SharedPreferencesManager spManager;
     private ApiService apiService;
     private Debouncer usernameDebouncer;
     private Debouncer emailDebouncer;
@@ -111,6 +115,7 @@ public class RegisterActivity extends AppCompatActivity {
     private void initDependencies() {
         Log.d(TAG, "🔄 开始初始化依赖组件...");
 
+        spManager = new SharedPreferencesManager(this);
         apiService = RetrofitClient.getApiService();
         usernameDebouncer = new Debouncer(500); // 500ms防抖
         emailDebouncer = new Debouncer(500);    // 500ms防抖
@@ -582,7 +587,7 @@ public class RegisterActivity extends AppCompatActivity {
 
                 if (response.isSuccessful() && response.body() != null) {
                     Log.d(TAG, "✅ API请求成功，开始处理响应数据");
-                    handleRegisterResponse(response.body());
+                    handleRegisterResponse(response.body(), username, password);
                 } else {
                     String errorMsg = "❌ API响应异常 - " +
                             "响应码: " + response.code() +
@@ -603,19 +608,21 @@ public class RegisterActivity extends AppCompatActivity {
     /**
      * 处理注册响应
      * @param response API响应数据
+     * @param username 用户名
+     * @param password 密码
      */
-    private void handleRegisterResponse(ApiResponse<Void> response) {
+    private void handleRegisterResponse(ApiResponse<Void> response, String username, String password) {
         Log.d(TAG, "🔧 开始处理注册响应: " + response.toString());
 
         if (response.isSuccess()) {
             Log.d(TAG, "🎉 注册业务逻辑成功");
 
             // 显示成功提示
-            Toast.makeText(this, "🎉 注册成功！请登录", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "🎉 注册成功！正在自动登录...", Toast.LENGTH_SHORT).show();
             Log.d(TAG, "✅ 成功提示已显示");
 
-            // 跳转到登录页面
-            navigateToLogin();
+            // 注册成功后自动登录
+            performAutoLoginAfterRegister(username, password);
         } else {
             String errorMsg = "❌ 注册业务失败 - " +
                     "状态码: " + response.getCode() +
@@ -623,6 +630,110 @@ public class RegisterActivity extends AppCompatActivity {
             Log.e(TAG, errorMsg);
             handleRegisterError(response.getMessage());
         }
+    }
+
+    /**
+     * 注册成功后自动登录
+     * @param username 用户名
+     * @param password 密码
+     */
+    private void performAutoLoginAfterRegister(String username, String password) {
+        Log.d(TAG, "🤖 注册成功后开始自动登录...");
+
+        // 更新按钮状态
+        setRegisterButtonState(false, "⏳ 自动登录中...");
+
+        UserLoginDTO loginDTO = new UserLoginDTO(username, password);
+        Log.d(TAG, "📦 创建自动登录请求数据: " + loginDTO.toString());
+
+        apiService.login(loginDTO).enqueue(new Callback<ApiResponse<UserLoginVO>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<UserLoginVO>> call,
+                                   Response<ApiResponse<UserLoginVO>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Log.d(TAG, "✅ 自动登录API请求成功");
+                    handleAutoLoginAfterRegister(response.body(), username, password);
+                } else {
+                    Log.e(TAG, "❌ 自动登录API响应异常");
+                    handleAutoLoginAfterRegisterError("自动登录失败，请手动登录");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<UserLoginVO>> call, Throwable t) {
+                Log.e(TAG, "💥 自动登录网络请求失败: " + t.getMessage());
+                handleAutoLoginAfterRegisterError("自动登录网络错误");
+            }
+        });
+    }
+
+    /**
+     * 处理注册后自动登录响应
+     * @param response API响应数据
+     * @param username 用户名
+     * @param password 密码
+     */
+    private void handleAutoLoginAfterRegister(ApiResponse<UserLoginVO> response, String username, String password) {
+        Log.d(TAG, "🔧 开始处理注册后自动登录响应");
+
+        if (response.isSuccess() && response.getData() != null) {
+            Log.d(TAG, "🎉 注册后自动登录成功");
+
+            UserLoginVO loginVO = response.getData();
+
+            // 保存令牌信息
+            spManager.saveTokens(
+                    loginVO.getAccessToken(),
+                    loginVO.getRefreshToken(),
+                    loginVO.getAccessTokenExpiredAt()
+            );
+
+            // 保存用户凭证（默认记住登录状态）
+            spManager.saveUserCredentials(username, password, true);
+
+            Toast.makeText(this, "🎉 注册并登录成功！", Toast.LENGTH_SHORT).show();
+            navigateToHomePage();
+        } else {
+            Log.e(TAG, "❌ 注册后自动登录业务失败: " + response.getMessage());
+            handleAutoLoginAfterRegisterError("自动登录失败: " + response.getMessage());
+
+            // 自动登录失败，跳转到登录页面
+            navigateToLoginWithCredentials(username, password);
+        }
+    }
+
+    /**
+     * 处理注册后自动登录错误
+     * @param errorMessage 错误信息
+     */
+    private void handleAutoLoginAfterRegisterError(String errorMessage) {
+        Log.e(TAG, "💥 处理注册后自动登录错误: " + errorMessage);
+
+        // 恢复按钮状态
+        setRegisterButtonState(true, "📝 注册账户");
+
+        Toast.makeText(this, "❌ " + errorMessage, Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * 跳转到登录页面并填充凭证
+     * @param username 用户名
+     * @param password 密码
+     */
+    private void navigateToLoginWithCredentials(String username, String password) {
+        Log.d(TAG, "🚀 跳转到登录页面并填充凭证");
+
+        Intent intent = new Intent(this, MainActivity.class);
+
+        // 使用 Bundle 传递凭证信息
+        Bundle bundle = new Bundle();
+        bundle.putString("username", username);
+        bundle.putString("password", password);
+        intent.putExtras(bundle);
+
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
     }
 
     /**
@@ -664,6 +775,20 @@ public class RegisterActivity extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
         Log.d(TAG, "✅ 登录页面Activity已启动");
+
+        finish();
+        Log.d(TAG, "🎬 当前注册页面已结束");
+    }
+
+    /**
+     * 跳转到主页面
+     */
+    private void navigateToHomePage() {
+        Log.d(TAG, "🚀 开始跳转到主页面...");
+
+//        Intent intent = new Intent(this, HomeActivity.class);
+//        startActivity(intent);
+        Log.d(TAG, "✅ 主页面Activity已启动");
 
         finish();
         Log.d(TAG, "🎬 当前注册页面已结束");

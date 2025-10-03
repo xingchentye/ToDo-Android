@@ -55,7 +55,14 @@ public class MainActivity extends AppCompatActivity {
         initViews();
         initDependencies();
         setupClickListeners();
+
+        // 检查是否有传递的凭证
+        checkPassedCredentials();
+
+        // 加载保存的用户凭证
         loadSavedCredentials();
+
+        // 检查自动登录
         checkAutoLogin();
 
         Log.d(TAG, "🎉 Activity初始化完成");
@@ -77,10 +84,6 @@ public class MainActivity extends AppCompatActivity {
         versionInfo = findViewById(R.id.versionInfo);
 
         Log.d(TAG, "✅ 所有界面组件初始化完成");
-        Log.d(TAG, "📋 组件状态 - " +
-                "用户名输入框: " + (usernameEditText != null ? "✅" : "❌") +
-                ", 密码输入框: " + (passwordEditText != null ? "✅" : "❌") +
-                ", 登录按钮: " + (loginButton != null ? "✅" : "❌"));
     }
 
     /**
@@ -93,9 +96,6 @@ public class MainActivity extends AppCompatActivity {
         apiService = RetrofitClient.getApiService();
 
         Log.d(TAG, "✅ 依赖组件初始化完成");
-        Log.d(TAG, "📋 组件状态 - " +
-                "存储管理器: " + (spManager != null ? "✅" : "❌") +
-                ", API服务: " + (apiService != null ? "✅" : "❌"));
     }
 
     /**
@@ -113,11 +113,10 @@ public class MainActivity extends AppCompatActivity {
         // 注册提示点击事件
         registerHint.setOnClickListener(v -> {
             Log.d(TAG, "👆 注册提示被点击");
-            Toast.makeText(MainActivity.this,
-                    "📞 请联系管理员获取账户", Toast.LENGTH_SHORT).show();
+            navigateToRegister();
         });
 
-        // 输入框焦点变化监听 - 清除错误状态
+        // 清除输入框错误状态
         usernameEditText.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
                 Log.d(TAG, "👤 用户名输入框获得焦点");
@@ -132,14 +131,32 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        TextView registerHint = findViewById(R.id.registerHint);
-        registerHint.setOnClickListener(v -> {
-            Log.d(TAG, "👆 注册提示被点击，跳转到注册页面");
-            Intent intent = new Intent(MainActivity.this, RegisterActivity.class);
-            startActivity(intent);
-        });
-
         Log.d(TAG, "✅ 所有点击监听器设置完成");
+    }
+
+    /**
+     * 检查是否有传递的凭证
+     */
+    private void checkPassedCredentials() {
+        Log.d(TAG, "🔍 检查传递的凭证信息...");
+
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            String username = extras.getString("username");
+            String password = extras.getString("password");
+
+            if (username != null && password != null) {
+                Log.d(TAG, "📨 接收到传递的凭证 - 用户名: " + username);
+
+                usernameEditText.setText(username);
+                passwordEditText.setText(password);
+                rememberMeCheckbox.setChecked(true);
+
+                Log.d(TAG, "✅ 已填充传递的凭证信息");
+            }
+        } else {
+            Log.d(TAG, "ℹ️ 未接收到传递的凭证");
+        }
     }
 
     /**
@@ -150,9 +167,13 @@ public class MainActivity extends AppCompatActivity {
 
         if (spManager.shouldRememberMe()) {
             String savedUsername = spManager.getSavedUsername();
+            String savedPassword = spManager.getSavedPassword();
+
             usernameEditText.setText(savedUsername);
+            passwordEditText.setText(savedPassword);
             rememberMeCheckbox.setChecked(true);
-            Log.d(TAG, "✅ 已加载保存的用户名: " + savedUsername);
+
+            Log.d(TAG, "✅ 已加载保存的用户凭证 - 用户名: " + savedUsername);
         } else {
             Log.d(TAG, "ℹ️ 未启用记住我功能，跳过加载凭证");
         }
@@ -164,12 +185,99 @@ public class MainActivity extends AppCompatActivity {
     private void checkAutoLogin() {
         Log.d(TAG, "🔄 检查自动登录条件...");
 
-        if (spManager.isTokenValid()) {
-            Log.d(TAG, "🎯 Token有效，执行自动登录");
+        if (spManager.shouldRememberMe() && spManager.isTokenValid()) {
+            Log.d(TAG, "🎯 满足自动登录条件，执行自动登录");
+            String savedUsername = spManager.getSavedUsername();
+            String savedPassword = spManager.getSavedPassword();
+
+            if (!savedUsername.isEmpty() && !savedPassword.isEmpty()) {
+                Log.d(TAG, "🔑 使用保存的凭证执行自动登录");
+                performAutoLogin(savedUsername, savedPassword);
+            } else {
+                Log.w(TAG, "⚠️ 保存的凭证为空，跳过自动登录");
+            }
+        } else {
+            Log.d(TAG, "ℹ️ 不满足自动登录条件，需要手动登录");
+        }
+    }
+
+    /**
+     * 执行自动登录
+     * @param username 用户名
+     * @param password 密码
+     */
+    private void performAutoLogin(String username, String password) {
+        Log.d(TAG, "🤖 开始执行自动登录...");
+
+        // 显示自动登录状态
+        setLoginButtonState(false, "⏳ 自动登录中...");
+
+        UserLoginDTO loginDTO = new UserLoginDTO(username, password);
+        Log.d(TAG, "📦 创建自动登录请求数据: " + loginDTO.toString());
+
+        apiService.login(loginDTO).enqueue(new Callback<ApiResponse<UserLoginVO>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<UserLoginVO>> call,
+                                   Response<ApiResponse<UserLoginVO>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Log.d(TAG, "✅ 自动登录API请求成功");
+                    handleAutoLoginResponse(response.body());
+                } else {
+                    Log.e(TAG, "❌ 自动登录API响应异常");
+                    handleAutoLoginError("自动登录失败，请手动登录");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<UserLoginVO>> call, Throwable t) {
+                Log.e(TAG, "💥 自动登录网络请求失败: " + t.getMessage());
+                handleAutoLoginError("自动登录网络错误");
+            }
+        });
+    }
+
+    /**
+     * 处理自动登录响应
+     * @param response API响应数据
+     */
+    private void handleAutoLoginResponse(ApiResponse<UserLoginVO> response) {
+        Log.d(TAG, "🔧 开始处理自动登录响应");
+
+        if (response.isSuccess() && response.getData() != null) {
+            Log.d(TAG, "🎉 自动登录成功");
+
+            UserLoginVO loginVO = response.getData();
+
+            // 保存新的令牌信息
+            spManager.saveTokens(
+                    loginVO.getAccessToken(),
+                    loginVO.getRefreshToken(),
+                    loginVO.getAccessTokenExpiredAt()
+            );
+
+            Toast.makeText(this, "🤖 自动登录成功！", Toast.LENGTH_SHORT).show();
             navigateToHomePage();
         } else {
-            Log.d(TAG, "ℹ️ Token无效或不存在，需要手动登录");
+            Log.e(TAG, "❌ 自动登录业务失败: " + response.getMessage());
+            handleAutoLoginError("自动登录失败: " + response.getMessage());
         }
+    }
+
+    /**
+     * 处理自动登录错误
+     * @param errorMessage 错误信息
+     */
+    private void handleAutoLoginError(String errorMessage) {
+        Log.e(TAG, "💥 处理自动登录错误: " + errorMessage);
+
+        // 恢复按钮状态
+        setLoginButtonState(true, "🔑 登录账户");
+
+        // 清除无效的令牌
+        spManager.clearTokens();
+
+        // 显示错误提示但不干扰用户
+        Log.w(TAG, "⚠️ 自动登录失败，需要用户手动登录");
     }
 
     /**
@@ -269,7 +377,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (response.isSuccessful() && response.body() != null) {
                     Log.d(TAG, "✅ API请求成功，开始处理响应数据");
-                    handleLoginResponse(response.body());
+                    handleLoginResponse(response.body(), username, password);
                 } else {
                     String errorMsg = "❌ API响应异常 - " +
                             "响应码: " + response.code() +
@@ -290,8 +398,10 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 处理登录响应
      * @param response API响应数据
+     * @param username 用户名
+     * @param password 密码
      */
-    private void handleLoginResponse(ApiResponse<UserLoginVO> response) {
+    private void handleLoginResponse(ApiResponse<UserLoginVO> response, String username, String password) {
         Log.d(TAG, "🔧 开始处理登录响应: " + response.toString());
 
         if (response.isSuccess() && response.getData() != null) {
@@ -305,13 +415,14 @@ public class MainActivity extends AppCompatActivity {
             spManager.saveTokens(
                     loginVO.getAccessToken(),
                     loginVO.getRefreshToken(),
-                    loginVO.getAccessTokenExpiredAt()
+                    loginVO.getAccessTokenExpiredAt() // 这里传入的是秒级时间戳
             );
             Log.d(TAG, "✅ 令牌信息已保存");
 
             // 保存用户凭证
             spManager.saveUserCredentials(
-                    usernameEditText.getText().toString().trim(),
+                    username,
+                    password,
                     rememberMeCheckbox.isChecked()
             );
             Log.d(TAG, "✅ 用户凭证已保存");
@@ -373,6 +484,17 @@ public class MainActivity extends AppCompatActivity {
 
         finish();
         Log.d(TAG, "🎬 当前登录页面已结束");
+    }
+
+    /**
+     * 跳转到注册页面
+     */
+    private void navigateToRegister() {
+        Log.d(TAG, "🚀 开始跳转到注册页面...");
+
+        Intent intent = new Intent(this, RegisterActivity.class);
+        startActivity(intent);
+        Log.d(TAG, "✅ 注册页面Activity已启动");
     }
 
     @Override
