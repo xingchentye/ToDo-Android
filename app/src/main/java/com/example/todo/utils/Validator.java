@@ -11,8 +11,8 @@ import java.util.regex.Pattern;
 public class Validator {
     private static final String TAG = "🔍 输入验证器"; // 日志标签
 
-    // 正则表达式模式
-    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_]{3,20}$");
+    // 正则表达式模式 - 用户名改为4-20个字符
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_]{4,20}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@$!%*#?&]{6,20}$");
 
@@ -26,6 +26,7 @@ public class Validator {
 
         Log.d(TAG, "👤 用户名验证 - " +
                 "输入: " + (username != null ? "'" + username + "'" : "null") +
+                ", 长度: " + (username != null ? username.length() : 0) +
                 ", 结果: " + (isValid ? "✅ 有效" : "❌ 无效"));
 
         return isValid;
@@ -82,7 +83,7 @@ public class Validator {
      * @return 提示信息
      */
     public static String getUsernameHint() {
-        return "用户名需3-20位字母、数字或下划线";
+        return "用户名需4-20位字母、数字或下划线"; // 修改提示信息
     }
 
     /**
@@ -107,5 +108,52 @@ public class Validator {
      */
     public static String getPasswordHint() {
         return "密码需6-20位字符，包含字母和数字";
+    }
+
+    /**
+     * 从后端错误消息中提取纯文本信息
+     * 用于处理类似"邮箱格式不正确 [ErrorCode = VAL-PARAM-1001]"的格式
+     * @param backendMessage 后端返回的错误消息
+     * @return 提取后的纯错误信息
+     */
+    public static String extractErrorMessage(String backendMessage) {
+        if (TextUtils.isEmpty(backendMessage)) {
+            Log.d(TAG, "📝 错误信息提取 - 输入为空");
+            return "";
+        }
+
+        // 使用正则表达式匹配并移除 [ErrorCode = XXX] 部分
+        String cleanMessage = backendMessage.replaceAll("\\s*\\[ErrorCode\\s*=\\s*[^]]+\\]", "").trim();
+
+        Log.d(TAG, "📝 错误信息提取 - " +
+                "原始: '" + backendMessage + "'" +
+                ", 提取后: '" + cleanMessage + "'");
+
+        return cleanMessage;
+    }
+
+    /**
+     * 从后端错误消息中提取错误码
+     * @param backendMessage 后端返回的错误消息
+     * @return 错误码，如果没有找到返回空字符串
+     */
+    public static String extractErrorCode(String backendMessage) {
+        if (TextUtils.isEmpty(backendMessage)) {
+            Log.d(TAG, "🔢 错误码提取 - 输入为空");
+            return "";
+        }
+
+        // 使用正则表达式提取错误码
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[ErrorCode\\s*=\\s*([^]]+)\\]");
+        java.util.regex.Matcher matcher = pattern.matcher(backendMessage);
+
+        if (matcher.find()) {
+            String errorCode = matcher.group(1);
+            Log.d(TAG, "🔢 错误码提取 - 从 '" + backendMessage + "' 中提取到: '" + errorCode + "'");
+            return errorCode;
+        }
+
+        Log.d(TAG, "🔢 错误码提取 - 从 '" + backendMessage + "' 中未找到错误码");
+        return "";
     }
 }

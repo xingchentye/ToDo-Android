@@ -141,7 +141,7 @@
                     android:id="@+id/registerHint"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="没有账户？联系管理员注册"
+                    android:text="还没有账号？去注册"
                     android:textColor="@color/primary"
                     android:textSize="14sp"
                     android:layout_marginTop="16dp"

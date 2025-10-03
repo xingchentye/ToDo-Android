@@ -1,9 +1,11 @@
 package com.example.todo.network;
 
 import com.example.todo.model.dto.UserLoginDTO;
+import com.example.todo.model.dto.UserRefreshTokenDTO;
 import com.example.todo.model.dto.UserRegisterDTO;
 import com.example.todo.model.response.ApiResponse;
 import com.example.todo.model.vo.UserLoginVO;
+import com.example.todo.model.vo.UserRefreshTokenVO;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
@@ -31,6 +33,14 @@ public interface ApiService {
      */
     @POST("/users/register")
     Call<ApiResponse<Void>> register(@Body UserRegisterDTO userRegisterDTO);
+
+    /**
+     * 用户刷新令牌接口
+     * @param refreshTokenDTO 刷新令牌请求数据
+     * @return 刷新令牌响应结果
+     */
+    @POST("/users/refresh-token")
+    Call<ApiResponse<UserRefreshTokenVO>> refreshToken(@Body UserRefreshTokenDTO refreshTokenDTO);
 
     /**
      * 校验用户名是否可用

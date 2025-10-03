@@ -2,6 +2,8 @@ package com.example.todo;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -14,6 +16,8 @@ import com.example.todo.model.vo.UserLoginVO;
 import com.example.todo.network.ApiService;
 import com.example.todo.network.RetrofitClient;
 import com.example.todo.storage.SharedPreferencesManager;
+import com.example.todo.storage.TokenManager;
+import com.example.todo.utils.ApiResponseHandler;
 import com.example.todo.utils.NetworkUtils;
 import com.example.todo.utils.Validator;
 import com.google.android.material.textfield.TextInputEditText;
@@ -24,9 +28,9 @@ import retrofit2.Response;
 
 /**
  * 主Activity - 用户登录界面
- * 处理用户登录逻辑和界面交互
+ * 处理用户登录逻辑和界面交互，支持令牌自动刷新
  */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements TokenManager.TokenRefreshListener {
     private static final String TAG = "🚀 主Activity"; // 日志标签
 
     // 界面组件
@@ -41,7 +45,13 @@ public class MainActivity extends AppCompatActivity {
 
     // 业务组件
     private SharedPreferencesManager spManager;
+    private TokenManager tokenManager;
     private ApiService apiService;
+
+    // 自动登录状态
+    private boolean isAutoLoginInProgress = false;
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
+    private static final long AUTO_LOGIN_TIMEOUT = 10000; // 10秒超时
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,10 +72,10 @@ public class MainActivity extends AppCompatActivity {
         // 加载保存的用户凭证
         loadSavedCredentials();
 
-        // 检查自动登录
-        checkAutoLogin();
-
         Log.d(TAG, "🎉 Activity初始化完成");
+
+        // 延迟检查自动登录，确保UI已完全加载
+        mainHandler.postDelayed(this::checkAutoLogin, 500);
     }
 
     /**
@@ -93,6 +103,8 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "🔄 开始初始化依赖组件...");
 
         spManager = new SharedPreferencesManager(this);
+        tokenManager = new TokenManager(this);
+        tokenManager.setTokenRefreshListener(this);
         apiService = RetrofitClient.getApiService();
 
         Log.d(TAG, "✅ 依赖组件初始化完成");
@@ -180,25 +192,60 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 检查自动登录
+     * 检查自动登录（支持令牌自动刷新）
      */
     private void checkAutoLogin() {
         Log.d(TAG, "🔄 检查自动登录条件...");
 
-        if (spManager.shouldRememberMe() && spManager.isTokenValid()) {
-            Log.d(TAG, "🎯 满足自动登录条件，执行自动登录");
-            String savedUsername = spManager.getSavedUsername();
-            String savedPassword = spManager.getSavedPassword();
+        if (spManager.shouldRememberMe()) {
+            Log.d(TAG, "🎯 记住我功能已启用，检查令牌状态");
 
-            if (!savedUsername.isEmpty() && !savedPassword.isEmpty()) {
-                Log.d(TAG, "🔑 使用保存的凭证执行自动登录");
-                performAutoLogin(savedUsername, savedPassword);
+            // 检查令牌有效性
+            if (spManager.isTokenValid()) {
+                Log.d(TAG, "✅ 令牌有效，直接跳转");
+                navigateToHomePage();
+                return;
+            }
+
+            // 检查是否有刷新令牌
+            String refreshToken = spManager.getRefreshToken();
+            if (!refreshToken.isEmpty()) {
+                Log.d(TAG, "🔄 访问令牌过期，但刷新令牌存在，尝试刷新");
+                isAutoLoginInProgress = true;
+                setLoginButtonState(false, "⏳ 自动登录中...");
+
+                // 设置超时处理
+                mainHandler.postDelayed(this::handleAutoLoginTimeout, AUTO_LOGIN_TIMEOUT);
+
+                // 尝试刷新令牌
+                tokenManager.checkAndRefreshTokenIfNeeded();
             } else {
-                Log.w(TAG, "⚠️ 保存的凭证为空，跳过自动登录");
+                Log.w(TAG, "❌ 没有刷新令牌，无法自动登录");
+                resetAutoLoginState();
             }
         } else {
-            Log.d(TAG, "ℹ️ 不满足自动登录条件，需要手动登录");
+            Log.d(TAG, "ℹ️ 未启用记住我功能，需要手动登录");
+            resetAutoLoginState();
         }
+    }
+
+    /**
+     * 处理自动登录超时
+     */
+    private void handleAutoLoginTimeout() {
+        if (isAutoLoginInProgress) {
+            Log.e(TAG, "⏰ 自动登录超时，恢复手动登录");
+            resetAutoLoginState();
+            Toast.makeText(this, "⏰ 自动登录超时，请手动登录", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 重置自动登录状态
+     */
+    private void resetAutoLoginState() {
+        isAutoLoginInProgress = false;
+        setLoginButtonState(true, "登录账户");
     }
 
     /**
@@ -219,12 +266,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ApiResponse<UserLoginVO>> call,
                                    Response<ApiResponse<UserLoginVO>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.d(TAG, "✅ 自动登录API请求成功");
-                    handleAutoLoginResponse(response.body());
+                // 使用统一的响应处理器
+                ApiResponse<UserLoginVO> processedResponse = ApiResponseHandler.processResponse(response);
+
+                if (processedResponse.isSuccess() && processedResponse.getData() != null) {
+                    Log.d(TAG, "✅ 自动登录成功");
+                    handleAutoLoginResponse(processedResponse.getData());
                 } else {
-                    Log.e(TAG, "❌ 自动登录API响应异常");
-                    handleAutoLoginError("自动登录失败，请手动登录");
+                    Log.e(TAG, "❌ 自动登录失败: " + processedResponse.getMessage());
+                    handleAutoLoginError(processedResponse.getMessage());
                 }
             }
 
@@ -238,29 +288,22 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 处理自动登录响应
-     * @param response API响应数据
+     * @param loginVO 登录响应数据
      */
-    private void handleAutoLoginResponse(ApiResponse<UserLoginVO> response) {
+    private void handleAutoLoginResponse(UserLoginVO loginVO) {
         Log.d(TAG, "🔧 开始处理自动登录响应");
 
-        if (response.isSuccess() && response.getData() != null) {
-            Log.d(TAG, "🎉 自动登录成功");
+        // 保存新的令牌信息
+        spManager.saveTokens(
+                loginVO.getAccessToken(),
+                loginVO.getRefreshToken(),
+                loginVO.getAccessTokenExpiredAt()
+        );
 
-            UserLoginVO loginVO = response.getData();
-
-            // 保存新的令牌信息
-            spManager.saveTokens(
-                    loginVO.getAccessToken(),
-                    loginVO.getRefreshToken(),
-                    loginVO.getAccessTokenExpiredAt()
-            );
-
-            Toast.makeText(this, "🤖 自动登录成功！", Toast.LENGTH_SHORT).show();
+        mainHandler.post(() -> {
+            Toast.makeText(MainActivity.this, "🤖 自动登录成功！", Toast.LENGTH_SHORT).show();
             navigateToHomePage();
-        } else {
-            Log.e(TAG, "❌ 自动登录业务失败: " + response.getMessage());
-            handleAutoLoginError("自动登录失败: " + response.getMessage());
-        }
+        });
     }
 
     /**
@@ -270,14 +313,49 @@ public class MainActivity extends AppCompatActivity {
     private void handleAutoLoginError(String errorMessage) {
         Log.e(TAG, "💥 处理自动登录错误: " + errorMessage);
 
-        // 恢复按钮状态
-        setLoginButtonState(true, "🔑 登录账户");
+        mainHandler.post(() -> {
+            resetAutoLoginState();
 
-        // 清除无效的令牌
-        spManager.clearTokens();
+            // 清除无效的令牌
+            tokenManager.clearAllTokens();
 
-        // 显示错误提示但不干扰用户
-        Log.w(TAG, "⚠️ 自动登录失败，需要用户手动登录");
+            // 显示错误提示但不干扰用户
+            Log.w(TAG, "⚠️ 自动登录失败，需要用户手动登录");
+        });
+    }
+
+    // ==================== TokenRefreshListener 接口实现 ====================
+
+    @Override
+    public void onTokenRefreshed(String newAccessToken) {
+        Log.d(TAG, "🎉 令牌刷新成功，自动登录完成");
+
+        mainHandler.post(() -> {
+            isAutoLoginInProgress = false;
+            Toast.makeText(this, "🔄 令牌已自动更新", Toast.LENGTH_SHORT).show();
+            navigateToHomePage();
+        });
+    }
+
+    @Override
+    public void onTokenRefreshFailed(String errorMessage) {
+        Log.e(TAG, "💥 令牌刷新失败: " + errorMessage);
+
+        mainHandler.post(() -> {
+            resetAutoLoginState();
+
+            // 检查是否有保存的用户凭证，尝试重新登录
+            String savedUsername = spManager.getSavedUsername();
+            String savedPassword = spManager.getSavedPassword();
+
+            if (!savedUsername.isEmpty() && !savedPassword.isEmpty()) {
+                Log.d(TAG, "🔄 令牌刷新失败，尝试使用保存的凭证重新登录");
+                performAutoLogin(savedUsername, savedPassword);
+            } else {
+                Log.w(TAG, "⚠️ 没有保存的用户凭证，需要手动登录");
+                Toast.makeText(this, "🔐 登录已过期，请重新登录", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     /**
@@ -327,9 +405,9 @@ public class MainActivity extends AppCompatActivity {
 
         boolean isValid = true;
 
-        // 用户名验证
+        // 用户名验证 - 更新错误提示信息
         if (!Validator.isValidUsername(username)) {
-            String errorMsg = "👤 用户名至少3个字符";
+            String errorMsg = "👤 用户名至少4个字符"; // 更新错误提示
             usernameLayout.setError(errorMsg);
             Log.w(TAG, "❌ 用户名验证失败: " + errorMsg);
             isValid = false;
@@ -339,7 +417,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 密码验证
         if (!Validator.isValidPassword(password)) {
-            String errorMsg = "🔒 密码至少6个字符";
+            String errorMsg = "🔒 密码至少6个字符，包含字母和数字";
             passwordLayout.setError(errorMsg);
             Log.w(TAG, "❌ 密码验证失败: " + errorMsg);
             isValid = false;
@@ -373,17 +451,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ApiResponse<UserLoginVO>> call,
                                    Response<ApiResponse<UserLoginVO>> response) {
-                Log.d(TAG, "📥 收到登录API响应");
+                Log.d(TAG, "📥 收到登录API响应 - 状态码: " + response.code());
 
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.d(TAG, "✅ API请求成功，开始处理响应数据");
-                    handleLoginResponse(response.body(), username, password);
+                // 使用统一的响应处理器
+                ApiResponse<UserLoginVO> processedResponse = ApiResponseHandler.processResponse(response);
+
+                // 处理业务逻辑
+                if (processedResponse.isSuccess() && processedResponse.getData() != null) {
+                    Log.d(TAG, "✅ 登录业务逻辑成功");
+                    handleLoginSuccess(processedResponse.getData(), username, password);
                 } else {
-                    String errorMsg = "❌ API响应异常 - " +
-                            "响应码: " + response.code() +
-                            ", 响应体: " + (response.body() == null ? "空" : "非空");
-                    Log.e(TAG, errorMsg);
-                    handleLoginError("🔧 服务器响应异常，请稍后重试");
+                    Log.w(TAG, "⚠️ 登录业务逻辑失败 - " +
+                            "状态码: " + processedResponse.getCode() +
+                            ", 消息: " + processedResponse.getMessage());
+                    handleLoginError(processedResponse.getMessage());
                 }
             }
 
@@ -396,50 +477,39 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 处理登录响应
-     * @param response API响应数据
+     * 处理登录成功
+     * @param loginVO 登录响应数据
      * @param username 用户名
      * @param password 密码
      */
-    private void handleLoginResponse(ApiResponse<UserLoginVO> response, String username, String password) {
-        Log.d(TAG, "🔧 开始处理登录响应: " + response.toString());
+    private void handleLoginSuccess(UserLoginVO loginVO, String username, String password) {
+        Log.d(TAG, "🎉 处理登录成功");
 
-        if (response.isSuccess() && response.getData() != null) {
-            Log.d(TAG, "🎉 登录业务逻辑成功");
+        // 获取登录响应数据
+        Log.d(TAG, "📋 登录响应数据: " + loginVO.toString());
 
-            // 获取登录响应数据
-            UserLoginVO loginVO = response.getData();
-            Log.d(TAG, "📋 登录响应数据: " + loginVO.toString());
+        // 保存令牌信息
+        spManager.saveTokens(
+                loginVO.getAccessToken(),
+                loginVO.getRefreshToken(),
+                loginVO.getAccessTokenExpiredAt() // 这里传入的是秒级时间戳
+        );
+        Log.d(TAG, "✅ 令牌信息已保存");
 
-            // 保存令牌信息
-            spManager.saveTokens(
-                    loginVO.getAccessToken(),
-                    loginVO.getRefreshToken(),
-                    loginVO.getAccessTokenExpiredAt() // 这里传入的是秒级时间戳
-            );
-            Log.d(TAG, "✅ 令牌信息已保存");
+        // 保存用户凭证
+        spManager.saveUserCredentials(
+                username,
+                password,
+                rememberMeCheckbox.isChecked()
+        );
+        Log.d(TAG, "✅ 用户凭证已保存");
 
-            // 保存用户凭证
-            spManager.saveUserCredentials(
-                    username,
-                    password,
-                    rememberMeCheckbox.isChecked()
-            );
-            Log.d(TAG, "✅ 用户凭证已保存");
+        // 显示成功提示
+        Toast.makeText(this, "🎉 登录成功！", Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "✅ 成功提示已显示");
 
-            // 显示成功提示
-            Toast.makeText(this, "🎉 登录成功！", Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "✅ 成功提示已显示");
-
-            // 跳转到主页面
-            navigateToHomePage();
-        } else {
-            String errorMsg = "❌ 登录业务失败 - " +
-                    "状态码: " + response.getCode() +
-                    ", 消息: " + response.getMessage();
-            Log.e(TAG, errorMsg);
-            handleLoginError(response.getMessage());
-        }
+        // 跳转到主页面
+        navigateToHomePage();
     }
 
     /**
@@ -450,7 +520,7 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "💥 处理登录错误: " + errorMessage);
 
         // 恢复按钮状态
-        setLoginButtonState(true, "🔑 登录账户");
+        setLoginButtonState(true, "登录账户");
         Log.d(TAG, "✅ 登录按钮状态已恢复");
 
         // 显示错误信息
@@ -478,12 +548,17 @@ public class MainActivity extends AppCompatActivity {
     private void navigateToHomePage() {
         Log.d(TAG, "🚀 开始跳转到主页面...");
 
-//        Intent intent = new Intent(this, HomeActivity.class);
-//        startActivity(intent);
-        Log.d(TAG, "✅ 主页面Activity已启动");
+//         TODO: 这里暂时注释掉，HomeActivity开发完成后再取消注释
+//         Intent intent = new Intent(this, HomeActivity.class);
+//         startActivity(intent);
+         Log.d(TAG, "✅ 主页面Activity已启动");
 
-        finish();
-        Log.d(TAG, "🎬 当前登录页面已结束");
+         finish();
+
+//        // 临时解决方案：显示成功消息但不跳转
+//        Toast.makeText(this, "🎉 登录成功！主页开发中...", Toast.LENGTH_LONG).show();
+//        resetAutoLoginState();
+//        Log.d(TAG, "🏠 主页开发中，暂不跳转");
     }
 
     /**
@@ -521,6 +596,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // 清理资源
+        if (tokenManager != null) {
+            tokenManager.setTokenRefreshListener(null);
+        }
+        // 移除所有回调
+        mainHandler.removeCallbacksAndMessages(null);
         Log.d(TAG, "💀 Activity被销毁");
     }
 }

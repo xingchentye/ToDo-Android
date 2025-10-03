@@ -18,6 +18,8 @@ import com.example.todo.model.vo.UserLoginVO;
 import com.example.todo.network.ApiService;
 import com.example.todo.network.RetrofitClient;
 import com.example.todo.storage.SharedPreferencesManager;
+import com.example.todo.storage.TokenManager;
+import com.example.todo.utils.ApiResponseHandler;
 import com.example.todo.utils.Debouncer;
 import com.example.todo.utils.NetworkUtils;
 import com.example.todo.utils.Validator;
@@ -52,6 +54,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     // 业务组件
     private SharedPreferencesManager spManager;
+    private TokenManager tokenManager;
     private ApiService apiService;
     private Debouncer usernameDebouncer;
     private Debouncer emailDebouncer;
@@ -116,6 +119,7 @@ public class RegisterActivity extends AppCompatActivity {
         Log.d(TAG, "🔄 开始初始化依赖组件...");
 
         spManager = new SharedPreferencesManager(this);
+        tokenManager = new TokenManager(this);
         apiService = RetrofitClient.getApiService();
         usernameDebouncer = new Debouncer(500); // 500ms防抖
         emailDebouncer = new Debouncer(500);    // 500ms防抖
@@ -177,7 +181,7 @@ public class RegisterActivity extends AppCompatActivity {
                     usernameDebouncer.debounce("check_username", () -> checkUsernameAvailability(username));
                 } else {
                     usernameDebouncer.cancel("check_username");
-                    setUsernameAvailable(false);
+                    setUsernameAvailable(false, "用户名格式不正确");
                 }
 
                 // 更新注册按钮状态
@@ -227,7 +231,7 @@ public class RegisterActivity extends AppCompatActivity {
                     emailDebouncer.debounce("check_email", () -> checkEmailAvailability(email));
                 } else {
                     emailDebouncer.cancel("check_email");
-                    setEmailAvailable(false);
+                    setEmailAvailable(false, "邮箱格式不正确");
                 }
 
                 // 更新注册按钮状态
@@ -268,7 +272,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         if (username.isEmpty()) {
             usernameLayout.setError(null);
-            usernameStatusText.setText(Validator.getUsernameHint());
+            usernameStatusText.setText(Validator.getUsernameHint()); // 这里会自动使用新的提示
             usernameStatusText.setTextColor(ContextCompat.getColor(this, R.color.onSurfaceVariant));
             usernameLayout.setEndIconTintList(null);
         } else if (isUsernameValid) {
@@ -278,7 +282,7 @@ public class RegisterActivity extends AppCompatActivity {
             usernameLayout.setEndIconTintList(ContextCompat.getColorStateList(this, R.color.success));
         } else {
             usernameLayout.setError("❌ 用户名格式不正确");
-            usernameStatusText.setText("❌ " + Validator.getUsernameHint());
+            usernameStatusText.setText("❌ " + Validator.getUsernameHint()); // 这里会自动使用新的提示
             usernameStatusText.setTextColor(ContextCompat.getColor(this, R.color.error));
             usernameLayout.setEndIconTintList(ContextCompat.getColorStateList(this, R.color.error));
         }
@@ -364,22 +368,26 @@ public class RegisterActivity extends AppCompatActivity {
         apiService.checkUsername(username).enqueue(new Callback<ApiResponse<Boolean>>() {
             @Override
             public void onResponse(Call<ApiResponse<Boolean>> call, Response<ApiResponse<Boolean>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<Boolean> apiResponse = response.body();
-                    boolean available = Boolean.TRUE.equals(apiResponse.getData());
+                // 使用统一的响应处理器
+                ApiResponse<Boolean> processedResponse = ApiResponseHandler.processResponse(response);
 
-                    Log.d(TAG, "✅ 用户名可用性检查完成: " + (available ? "✅ 可用" : "❌ 不可用"));
-                    setUsernameAvailable(available);
+                boolean available = Boolean.TRUE.equals(processedResponse.getData());
+
+                Log.d(TAG, "✅ 用户名可用性检查完成: " + (available ? "✅ 可用" : "❌ 不可用"));
+
+                if (available) {
+                    setUsernameAvailable(true, null);
                 } else {
-                    Log.e(TAG, "❌ 用户名检查API响应异常");
-                    setUsernameAvailable(false);
+                    // 使用处理后的错误信息
+                    String errorMessage = processedResponse.getMessage();
+                    setUsernameAvailable(false, errorMessage);
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Boolean>> call, Throwable t) {
                 Log.e(TAG, "💥 用户名检查网络请求失败: " + t.getMessage());
-                setUsernameAvailable(false);
+                setUsernameAvailable(false, "网络错误，无法检查用户名");
             }
         });
     }
@@ -399,22 +407,26 @@ public class RegisterActivity extends AppCompatActivity {
         apiService.checkEmail(email).enqueue(new Callback<ApiResponse<Boolean>>() {
             @Override
             public void onResponse(Call<ApiResponse<Boolean>> call, Response<ApiResponse<Boolean>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<Boolean> apiResponse = response.body();
-                    boolean available = Boolean.TRUE.equals(apiResponse.getData());
+                // 使用统一的响应处理器
+                ApiResponse<Boolean> processedResponse = ApiResponseHandler.processResponse(response);
 
-                    Log.d(TAG, "✅ 邮箱可用性检查完成: " + (available ? "✅ 可用" : "❌ 不可用"));
-                    setEmailAvailable(available);
+                boolean available = Boolean.TRUE.equals(processedResponse.getData());
+
+                Log.d(TAG, "✅ 邮箱可用性检查完成: " + (available ? "✅ 可用" : "❌ 不可用"));
+
+                if (available) {
+                    setEmailAvailable(true, null);
                 } else {
-                    Log.e(TAG, "❌ 邮箱检查API响应异常");
-                    setEmailAvailable(false);
+                    // 使用处理后的错误信息
+                    String errorMessage = processedResponse.getMessage();
+                    setEmailAvailable(false, errorMessage);
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Boolean>> call, Throwable t) {
                 Log.e(TAG, "💥 邮箱检查网络请求失败: " + t.getMessage());
-                setEmailAvailable(false);
+                setEmailAvailable(false, "网络错误，无法检查邮箱");
             }
         });
     }
@@ -422,8 +434,9 @@ public class RegisterActivity extends AppCompatActivity {
     /**
      * 设置用户名可用状态
      * @param available 是否可用
+     * @param errorMessage 错误信息（如果不可用）
      */
-    private void setUsernameAvailable(boolean available) {
+    private void setUsernameAvailable(boolean available, String errorMessage) {
         isUsernameAvailable = available;
 
         runOnUiThread(() -> {
@@ -431,23 +444,28 @@ public class RegisterActivity extends AppCompatActivity {
                 usernameStatusText.setText("✅ 用户名可用");
                 usernameStatusText.setTextColor(ContextCompat.getColor(this, R.color.success));
                 usernameLayout.setEndIconTintList(ContextCompat.getColorStateList(this, R.color.success));
+                usernameLayout.setError(null);
             } else if (isUsernameValid) {
-                usernameStatusText.setText("❌ 用户名已被占用");
+                // 只在用户名格式正确但不可用时显示错误
+                String displayMessage = errorMessage != null ? errorMessage : "用户名已被占用";
+                usernameStatusText.setText("❌ " + displayMessage);
                 usernameStatusText.setTextColor(ContextCompat.getColor(this, R.color.error));
                 usernameLayout.setEndIconTintList(ContextCompat.getColorStateList(this, R.color.error));
+                usernameLayout.setError(displayMessage);
             }
 
             updateRegisterButtonState();
         });
 
-        Log.d(TAG, "👤 用户名可用状态更新: " + (available ? "✅ 可用" : "❌ 不可用"));
+        Log.d(TAG, "👤 用户名可用状态更新: " + (available ? "✅ 可用" : "❌ 不可用 - " + errorMessage));
     }
 
     /**
      * 设置邮箱可用状态
      * @param available 是否可用
+     * @param errorMessage 错误信息（如果不可用）
      */
-    private void setEmailAvailable(boolean available) {
+    private void setEmailAvailable(boolean available, String errorMessage) {
         isEmailAvailable = available;
 
         runOnUiThread(() -> {
@@ -455,16 +473,20 @@ public class RegisterActivity extends AppCompatActivity {
                 emailStatusText.setText("✅ 邮箱可用");
                 emailStatusText.setTextColor(ContextCompat.getColor(this, R.color.success));
                 emailLayout.setEndIconTintList(ContextCompat.getColorStateList(this, R.color.success));
+                emailLayout.setError(null);
             } else if (isEmailValid) {
-                emailStatusText.setText("❌ 邮箱已被注册");
+                // 只在邮箱格式正确但不可用时显示错误
+                String displayMessage = errorMessage != null ? errorMessage : "邮箱已被注册";
+                emailStatusText.setText("❌ " + displayMessage);
                 emailStatusText.setTextColor(ContextCompat.getColor(this, R.color.error));
                 emailLayout.setEndIconTintList(ContextCompat.getColorStateList(this, R.color.error));
+                emailLayout.setError(displayMessage);
             }
 
             updateRegisterButtonState();
         });
 
-        Log.d(TAG, "📧 邮箱可用状态更新: " + (available ? "✅ 可用" : "❌ 不可用"));
+        Log.d(TAG, "📧 邮箱可用状态更新: " + (available ? "✅ 可用" : "❌ 不可用 - " + errorMessage));
     }
 
     /**
@@ -537,7 +559,11 @@ public class RegisterActivity extends AppCompatActivity {
         boolean isValid = true;
 
         if (!isUsernameValid || !isUsernameAvailable) {
-            usernameLayout.setError("❌ 请检查用户名");
+            String errorMessage = "请检查用户名";
+            if (usernameLayout.getError() != null) {
+                errorMessage = usernameLayout.getError().toString();
+            }
+            usernameLayout.setError("❌ " + errorMessage);
             isValid = false;
         }
 
@@ -547,7 +573,11 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         if (!isEmailValid || !isEmailAvailable) {
-            emailLayout.setError("❌ 请检查邮箱");
+            String errorMessage = "请检查邮箱";
+            if (emailLayout.getError() != null) {
+                errorMessage = emailLayout.getError().toString();
+            }
+            emailLayout.setError("❌ " + errorMessage);
             isValid = false;
         }
 
@@ -585,15 +615,17 @@ public class RegisterActivity extends AppCompatActivity {
             public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
                 Log.d(TAG, "📥 收到注册API响应");
 
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.d(TAG, "✅ API请求成功，开始处理响应数据");
-                    handleRegisterResponse(response.body(), username, password);
+                // 使用统一的响应处理器
+                ApiResponse<Void> processedResponse = ApiResponseHandler.processResponse(response);
+
+                if (processedResponse.isSuccess()) {
+                    Log.d(TAG, "🎉 注册业务逻辑成功");
+                    handleRegisterSuccess(username, password);
                 } else {
-                    String errorMsg = "❌ API响应异常 - " +
-                            "响应码: " + response.code() +
-                            ", 响应体: " + (response.body() == null ? "空" : "非空");
-                    Log.e(TAG, errorMsg);
-                    handleRegisterError("🔧 服务器响应异常，请稍后重试");
+                    Log.w(TAG, "⚠️ 注册业务逻辑失败 - " +
+                            "状态码: " + processedResponse.getCode() +
+                            ", 消息: " + processedResponse.getMessage());
+                    handleRegisterError(processedResponse.getMessage());
                 }
             }
 
@@ -606,30 +638,19 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     /**
-     * 处理注册响应
-     * @param response API响应数据
+     * 处理注册成功
      * @param username 用户名
      * @param password 密码
      */
-    private void handleRegisterResponse(ApiResponse<Void> response, String username, String password) {
-        Log.d(TAG, "🔧 开始处理注册响应: " + response.toString());
+    private void handleRegisterSuccess(String username, String password) {
+        Log.d(TAG, "🎉 注册成功，开始自动登录");
 
-        if (response.isSuccess()) {
-            Log.d(TAG, "🎉 注册业务逻辑成功");
+        // 显示成功提示
+        Toast.makeText(this, "🎉 注册成功！正在自动登录...", Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "✅ 成功提示已显示");
 
-            // 显示成功提示
-            Toast.makeText(this, "🎉 注册成功！正在自动登录...", Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "✅ 成功提示已显示");
-
-            // 注册成功后自动登录
-            performAutoLoginAfterRegister(username, password);
-        } else {
-            String errorMsg = "❌ 注册业务失败 - " +
-                    "状态码: " + response.getCode() +
-                    ", 消息: " + response.getMessage();
-            Log.e(TAG, errorMsg);
-            handleRegisterError(response.getMessage());
-        }
+        // 注册成功后自动登录
+        performAutoLoginAfterRegister(username, password);
     }
 
     /**
@@ -650,11 +671,14 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ApiResponse<UserLoginVO>> call,
                                    Response<ApiResponse<UserLoginVO>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.d(TAG, "✅ 自动登录API请求成功");
-                    handleAutoLoginAfterRegister(response.body(), username, password);
+                // 使用统一的响应处理器
+                ApiResponse<UserLoginVO> processedResponse = ApiResponseHandler.processResponse(response);
+
+                if (processedResponse.isSuccess() && processedResponse.getData() != null) {
+                    Log.d(TAG, "✅ 自动登录成功");
+                    handleAutoLoginAfterRegister(processedResponse.getData(), username, password);
                 } else {
-                    Log.e(TAG, "❌ 自动登录API响应异常");
+                    Log.e(TAG, "❌ 自动登录失败: " + processedResponse.getMessage());
                     handleAutoLoginAfterRegisterError("自动登录失败，请手动登录");
                 }
             }
@@ -669,37 +693,25 @@ public class RegisterActivity extends AppCompatActivity {
 
     /**
      * 处理注册后自动登录响应
-     * @param response API响应数据
+     * @param loginVO 登录响应数据
      * @param username 用户名
      * @param password 密码
      */
-    private void handleAutoLoginAfterRegister(ApiResponse<UserLoginVO> response, String username, String password) {
+    private void handleAutoLoginAfterRegister(UserLoginVO loginVO, String username, String password) {
         Log.d(TAG, "🔧 开始处理注册后自动登录响应");
 
-        if (response.isSuccess() && response.getData() != null) {
-            Log.d(TAG, "🎉 注册后自动登录成功");
+        // 保存令牌信息
+        spManager.saveTokens(
+                loginVO.getAccessToken(),
+                loginVO.getRefreshToken(),
+                loginVO.getAccessTokenExpiredAt()
+        );
 
-            UserLoginVO loginVO = response.getData();
+        // 保存用户凭证（默认记住登录状态）
+        spManager.saveUserCredentials(username, password, true);
 
-            // 保存令牌信息
-            spManager.saveTokens(
-                    loginVO.getAccessToken(),
-                    loginVO.getRefreshToken(),
-                    loginVO.getAccessTokenExpiredAt()
-            );
-
-            // 保存用户凭证（默认记住登录状态）
-            spManager.saveUserCredentials(username, password, true);
-
-            Toast.makeText(this, "🎉 注册并登录成功！", Toast.LENGTH_SHORT).show();
-            navigateToHomePage();
-        } else {
-            Log.e(TAG, "❌ 注册后自动登录业务失败: " + response.getMessage());
-            handleAutoLoginAfterRegisterError("自动登录失败: " + response.getMessage());
-
-            // 自动登录失败，跳转到登录页面
-            navigateToLoginWithCredentials(username, password);
-        }
+        Toast.makeText(this, "🎉 注册并登录成功！", Toast.LENGTH_SHORT).show();
+        navigateToHomePage();
     }
 
     /**
@@ -786,12 +798,19 @@ public class RegisterActivity extends AppCompatActivity {
     private void navigateToHomePage() {
         Log.d(TAG, "🚀 开始跳转到主页面...");
 
-//        Intent intent = new Intent(this, HomeActivity.class);
-//        startActivity(intent);
+        // TODO: 这里暂时注释掉，等你的HomeActivity开发完成后再取消注释
+        // Intent intent = new Intent(this, HomeActivity.class);
+        // startActivity(intent);
         Log.d(TAG, "✅ 主页面Activity已启动");
 
         finish();
-        Log.d(TAG, "🎬 当前注册页面已结束");
+
+//        // 临时解决方案：显示成功消息但不跳转
+//        Toast.makeText(this, "🎉 注册并登录成功！主页开发中...", Toast.LENGTH_LONG).show();
+//        Log.d(TAG, "🏠 主页开发中，暂不跳转");
+
+        // 返回登录页面
+        navigateToLogin();
     }
 
     @Override
@@ -804,6 +823,11 @@ public class RegisterActivity extends AppCompatActivity {
         }
         if (emailDebouncer != null) {
             emailDebouncer.shutdown();
+        }
+
+        // 清理令牌管理器
+        if (tokenManager != null) {
+            tokenManager.setTokenRefreshListener(null);
         }
 
         Log.d(TAG, "💀 Activity被销毁");
