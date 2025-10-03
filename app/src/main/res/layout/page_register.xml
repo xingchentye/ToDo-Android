@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@drawable/gradient_background"
+    android:padding="8dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- 返回按钮 -->
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="返回登录"
+            android:src="@drawable/ic_arrow_back"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- 应用标题 -->
+        <TextView
+            android:id="@+id/appTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="注册账户"
+            android:textColor="@color/onSurface"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="24dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/backButton" />
+
+        <TextView
+            android:id="@+id/appSubtitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="创建您的Todo账户"
+            android:textColor="@color/onSurfaceVariant"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/appTitle" />
+
+        <!-- 注册卡片 -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/registerCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/surface"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/appSubtitle">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="20dp">
+
+                <!-- 用户名输入框 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/usernameLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:hint="用户名"
+                    app:endIconMode="custom"
+                    app:endIconDrawable="@drawable/ic_check_circle"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:endIconTint="@color/success">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/usernameEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:imeOptions="actionNext" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- 用户名校验状态提示 -->
+                <TextView
+                    android:id="@+id/usernameStatusText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="用户名需3-20位字母、数字或下划线"
+                    android:textColor="@color/onSurfaceVariant"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/usernameLayout" />
+
+                <!-- 昵称输入框 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nicknameLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="昵称"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/usernameStatusText">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nicknameEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:imeOptions="actionNext" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- 昵称提示 -->
+                <TextView
+                    android:id="@+id/nicknameHintText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="昵称用于显示，2-20个字符"
+                    android:textColor="@color/onSurfaceVariant"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/nicknameLayout" />
+
+                <!-- 邮箱输入框 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/emailLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="邮箱"
+                    app:endIconMode="custom"
+                    app:endIconDrawable="@drawable/ic_check_circle"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/nicknameHintText"
+                    tools:endIconTint="@color/success">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/emailEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textEmailAddress"
+                        android:maxLines="1"
+                        android:imeOptions="actionNext" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- 邮箱校验状态提示 -->
+                <TextView
+                    android:id="@+id/emailStatusText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="请输入有效的邮箱地址"
+                    android:textColor="@color/onSurfaceVariant"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/emailLayout" />
+
+                <!-- 密码输入框 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/passwordLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="密码"
+                    app:endIconMode="password_toggle"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/emailStatusText">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/passwordEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"
+                        android:maxLines="1"
+                        android:imeOptions="actionDone" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- 密码提示 -->
+                <TextView
+                    android:id="@+id/passwordHintText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="密码需6-20位字符，包含字母和数字"
+                    android:textColor="@color/onSurfaceVariant"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/passwordLayout" />
+
+                <!-- 注册按钮 -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/registerButton"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="20dp"
+                    android:text="注册账户"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    app:icon="@drawable/ic_register"
+                    app:iconGravity="textStart"
+                    app:iconPadding="6dp"
+                    app:cornerRadius="10dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/passwordHintText" />
+
+                <!-- 登录提示 -->
+                <TextView
+                    android:id="@+id/loginHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="已有账户？立即登录"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:layout_marginTop="12dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/registerButton" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 底部版本信息 -->
+        <TextView
+            android:id="@+id/versionInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Todo v1.0.0"
+            android:textColor="@color/onSurfaceVariant"
+            android:textSize="11sp"
+            android:alpha="0.7"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/registerCard"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主色调 -->
+    <color name="primary">#6750A4</color>
+    <color name="onPrimary">#FFFFFF</color>
+    <color name="primaryContainer">#EADDFF</color>
+    <color name="onPrimaryContainer">#21005D</color>
+
+    <!-- 次要色调 -->
+    <color name="secondary">#625B71</color>
+    <color name="onSecondary">#FFFFFF</color>
+    <color name="secondaryContainer">#E8DEF8</color>
+    <color name="onSecondaryContainer">#1D192B</color>
+
+    <!-- 表面色 -->
+    <color name="surface">#FFFBFE</color>
+    <color name="onSurface">#1C1B1F</color>
+    <color name="surfaceVariant">#E7E0EC</color>
+    <color name="onSurfaceVariant">#49454F</color>
+
+    <!-- 背景色 -->
+    <color name="background">#FFFBFE</color>
+    <color name="onBackground">#1C1B1F</color>
+
+    <!-- 状态色 -->
+    <color name="error">#BA1A1A</color>
+    <color name="onError">#FFFFFF</color>
+    <color name="errorContainer">#FFDAD6</color>
+    <color name="onErrorContainer">#410002</color>
+
+    <!-- 成功色 -->
+    <color name="success">#0F6A39</color>
+    <color name="onSuccess">#FFFFFF</color>
+    <color name="successContainer">#A0F7BC</color>
+    <color name="onSuccessContainer">#00210E</color>
+
+    <!-- 警告色 -->
+    <color name="warning">#FF9800</color>
+    <color name="onWarning">#FFFFFF</color>
+    <color name="warningContainer">#FFE0B2</color>
+    <color name="onWarningContainer">#3E2723</color>
+
+    <!-- 信息色 -->
+    <color name="info">#2196F3</color>
+    <color name="onInfo">#FFFFFF</color>
+    <color name="infoContainer">#BBDEFB</color>
+    <color name="onInfoContainer">#0D47A1</color>
+
+    <!-- 收入/支出颜色 -->
+    <color name="income">#0F6A39</color>
+    <color name="onIncome">#FFFFFF</color>
+    <color name="incomeContainer">#A0F7BC</color>
+    <color name="onIncomeContainer">#00210E</color>
+
+    <color name="expense">#BA1A1A</color>
+    <color name="onExpense">#FFFFFF</color>
+    <color name="expenseContainer">#FFDAD6</color>
+    <color name="onExpenseContainer">#410002</color>
+
+    <!-- 图表颜色 -->
+    <color name="chart_1">#6750A4</color>
+    <color name="chart_2">#7E57C2</color>
+    <color name="chart_3">#9575CD</color>
+    <color name="chart_4">#B39DDB</color>
+    <color name="chart_5">#D1C4E9</color>
+    <color name="chart_6">#EDE7F6</color>
+
+    <!-- 基础颜色 -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- 灰色调 -->
+    <color name="gray_50">#FAFAFA</color>
+    <color name="gray_100">#F5F5F5</color>
+    <color name="gray_200">#EEEEEE</color>
+    <color name="gray_300">#E0E0E0</color>
+    <color name="gray_400">#BDBDBD</color>
+    <color name="gray_500">#9E9E9E</color>
+    <color name="gray_600">#757575</color>
+    <color name="gray_700">#616161</color>
+    <color name="gray_800">#424242</color>
+    <color name="gray_900">#212121</color>
+
+    <!-- 语义颜色 -->
+    <color name="disabled">#9E9E9E</color>
+    <color name="disabled_container">#F5F5F5</color>
+    <color name="divider">#1F000000</color>
+    <color name="focus">#1F6750A4</color>
+    <color name="hover">#146750A4</color>
+    <color name="pressed">#296750A4</color>
+
+    <!-- 连接状态颜色 -->
+    <color name="connection_connected">#0F6A39</color>
+    <color name="connection_disconnected">#BA1A1A</color>
+    <color name="connection_connecting">#FF9800</color>
+    <color name="connection_reconnecting">#FF9800</color>
+
+    <!-- 网络延迟颜色 -->
+    <color name="latency_excellent">#0F6A39</color>
+    <color name="latency_good">#4CAF50</color>
+    <color name="latency_fair">#FF9800</color>
+    <color name="latency_poor">#F44336</color>
+    <color name="latency_bad">#BA1A1A</color>
+
+    <!-- 阴影颜色 -->
+    <color name="shadow_low">#0D000000</color>
+    <color name="shadow_medium">#1F000000</color>
+    <color name="shadow_high">#3D000000</color>
+
+    <!-- 渐变颜色 -->
+    <color name="gradient_start">#6750A4</color>
+    <color name="gradient_end">#7E57C2</color>
+    <color name="gradient_income_start">#0F6A39</color>
+    <color name="gradient_income_end">#4CAF50</color>
+    <color name="gradient_expense_start">#BA1A1A</color>
+    <color name="gradient_expense_end">#F44336</color>
+
+    <!-- 卡片背景 -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_elevated">#FFFFFF</color>
+    <color name="card_outline">#E7E0EC</color>
+
+    <!-- 输入字段 -->
+    <color name="input_background">#FFFFFF</color>
+    <color name="input_outline">#79747E</color>
+    <color name="input_focused">#6750A4</color>
+    <color name="input_error">#BA1A1A</color>
+    <color name="input_success">#0F6A39</color>
+
+    <!-- 按钮状态 -->
+    <color name="button_primary">#6750A4</color>
+    <color name="button_primary_pressed">#5A4791</color>
+    <color name="button_primary_disabled">#9E9E9E</color>
+    <color name="button_secondary">#625B71</color>
+    <color name="button_secondary_pressed">#554F63</color>
+
+    <!-- 图标颜色 -->
+    <color name="icon_primary">#1C1B1F</color>
+    <color name="icon_secondary">#49454F</color>
+    <color name="icon_disabled">#9E9E9E</color>
+    <color name="icon_on_primary">#FFFFFF</color>
+    <color name="icon_on_secondary">#FFFFFF</color>
+
+    <!-- 文本颜色 -->
+    <color name="text_primary">#1C1B1F</color>
+    <color name="text_secondary">#49454F</color>
+    <color name="text_tertiary">#79747E</color>
+    <color name="text_disabled">#9E9E9E</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="text_on_secondary">#FFFFFF</color>
+    <color name="text_on_success">#FFFFFF</color>
+    <color name="text_on_error">#FFFFFF</color>
+
+    <!-- 状态栏和导航栏 -->
+    <color name="status_bar">#6750A4</color>
+    <color name="navigation_bar">#FFFBFE</color>
+
+    <!-- 分隔线 -->
+    <color name="divider_light">#1F000000</color>
+    <color name="divider_dark">#33FFFFFF</color>
+
+    <!-- 涟漪效果 -->
+    <color name="ripple_primary">#1F6750A4</color>
+    <color name="ripple_surface">#1F000000</color>
+
+    <!-- 新增状态颜色 -->
+    <color name="primaryDark">#3A56D4</color>
+    <color name="green">#0F6A39</color>
+    <color name="orange">#FF9800</color>
+
+    <!-- Material Design 3 标准颜色 -->
+    <color name="md_primary">#6750A4</color>
+    <color name="md_primary_variant">#7E57C2</color>
+    <color name="md_secondary">#625B71</color>
+    <color name="md_secondary_variant">#7A7280</color>
+    <color name="md_background">#FFFBFE</color>
+    <color name="md_surface">#FFFBFE</color>
+    <color name="md_error">#BA1A1A</color>
+    <color name="md_on_primary">#FFFFFF</color>
+    <color name="md_on_secondary">#FFFFFF</color>
+    <color name="md_on_background">#1C1B1F</color>
+    <color name="md_on_surface">#1C1B1F</color>
+    <color name="md_on_error">#FFFFFF</color>
+
+    <!-- 应用特定颜色 -->
+    <color name="app_background">#FFFBFE</color>
+    <color name="app_bar_background">#6750A4</color>
+    <color name="app_bar_text">#FFFFFF</color>
+    <color name="bottom_nav_background">#FFFFFF</color>
+    <color name="bottom_nav_icon">#49454F</color>
+    <color name="bottom_nav_icon_selected">#6750A4</color>
+    <color name="fab_background">#6750A4</color>
+    <color name="fab_icon">#FFFFFF</color>
+    <color name="dialog_background">#FFFFFF</color>
+    <color name="dialog_scrim">#80000000</color>
+
+    <!-- 交易类型颜色 -->
+    <color name="transaction_income">#0F6A39</color>
+    <color name="transaction_expense">#BA1A1A</color>
+    <color name="transaction_transfer">#2196F3</color>
+    <color name="transaction_other">#FF9800</color>
+
+    <!-- 分类颜色 -->
+    <color name="category_food">#FF9800</color>
+    <color name="category_transport">#2196F3</color>
+    <color name="category_shopping">#9C27B0</color>
+    <color name="category_entertainment">#E91E63</color>
+    <color name="category_health">#4CAF50</color>
+    <color name="category_education">#009688</color>
+    <color name="category_other">#607D8B</color>
+
+
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+</resources>
