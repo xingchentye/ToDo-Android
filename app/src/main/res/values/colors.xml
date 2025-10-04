@@ -237,5 +237,8 @@
     <color name="nav_menu_text">#1C1B1F</color>
     <color name="nav_menu_text_selected">#6750A4</color>
 
-
+    <color name="onTertiary">#FFFFFF</color>
+    <color name="tertiaryContainer">#FFD8E4</color>
+    <color name="onTertiaryContainer">#31111D</color>
+    <color name="outlineVariant">#C4C7C5</color>
 </resources>

@@ -1,5 +1,6 @@
 package com.example.todo;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -129,15 +130,15 @@ public class ChangePasswordActivity extends AppCompatActivity {
 
                 if (processedResponse.isSuccess()) {
                     Log.d(TAG, "✅ 密码修改成功");
-                    Toast.makeText(ChangePasswordActivity.this, "密码修改成功", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ChangePasswordActivity.this, "密码修改成功，请重新登录", Toast.LENGTH_SHORT).show();
 
-                    // 更新本地存储的密码
-                    spManager.saveUserCredentials(
-                            spManager.getSavedUsername(),
-                            changePasswordDTO.getNewPassword(),
-                            spManager.shouldRememberMe()
-                    );
+                    // 清除所有用户数据
+                    spManager.clearAll();
 
+                    // 跳转到登录页面
+                    Intent intent = new Intent(ChangePasswordActivity.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
                     finish();
                 } else {
                     Log.w(TAG, "⚠️ 密码修改失败: " + processedResponse.getMessage());

@@ -1,13 +1,18 @@
+// ProfileFragment.java - 修复导航切换问题
 package com.example.todo.fragments;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.*;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
+import com.bumptech.glide.Glide;
 import com.example.todo.EditProfileActivity;
 import com.example.todo.ChangePasswordActivity;
 import com.example.todo.R;
@@ -24,7 +29,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * 个人中心Fragment
+ * 个人中心Fragment - 修复版本
  */
 public class ProfileFragment extends Fragment {
     private static final String TAG = "👤 个人中心Fragment";
@@ -33,16 +38,6 @@ public class ProfileFragment extends Fragment {
     private SharedPreferencesManager spManager;
     private ApiService apiService;
     private User currentUser;
-    private boolean isViewDestroyed = false;
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        Log.d(TAG, "🎬 Fragment创建开始");
-
-        // 初始化Retrofit
-        RetrofitClient.init(requireContext());
-    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -50,7 +45,6 @@ public class ProfileFragment extends Fragment {
 
         binding = FragmentProfileBinding.inflate(inflater, container, false);
         View view = binding.getRoot();
-        isViewDestroyed = false;
 
         initComponents();
         loadUserInfo();
@@ -72,12 +66,6 @@ public class ProfileFragment extends Fragment {
     private void loadUserInfo() {
         Log.d(TAG, "📥 加载用户信息");
 
-        // 检查视图状态
-        if (isViewDestroyed || binding == null) {
-            Log.w(TAG, "⚠️ 视图已销毁，跳过加载用户信息");
-            return;
-        }
-
         // 显示加载状态
         showLoading(true);
 
@@ -91,41 +79,27 @@ public class ProfileFragment extends Fragment {
         apiService.getCurrentUser().enqueue(new Callback<ApiResponse<User>>() {
             @Override
             public void onResponse(Call<ApiResponse<User>> call, Response<ApiResponse<User>> response) {
-                // 检查Fragment状态
-                if (isViewDestroyed || binding == null || getActivity() == null) {
-                    Log.w(TAG, "⚠️ Fragment状态无效，跳过处理响应");
-                    return;
+                showLoading(false);
+
+                ApiResponse<User> processedResponse = ApiResponseHandler.processResponse(response);
+
+                if (processedResponse.isSuccess() && processedResponse.getData() != null) {
+                    currentUser = processedResponse.getData();
+                    displayUserInfo(currentUser);
+                    Log.d(TAG, "✅ 用户信息加载成功");
+                } else {
+                    Log.w(TAG, "⚠️ 用户信息加载失败: " + processedResponse.getMessage());
+                    showLocalUserInfo();
+                    Toast.makeText(requireContext(), "加载失败: " + processedResponse.getMessage(), Toast.LENGTH_SHORT).show();
                 }
-
-                requireActivity().runOnUiThread(() -> {
-                    showLoading(false);
-
-                    ApiResponse<User> processedResponse = ApiResponseHandler.processResponse(response);
-
-                    if (processedResponse.isSuccess() && processedResponse.getData() != null) {
-                        currentUser = processedResponse.getData();
-                        displayUserInfo(currentUser);
-                        Log.d(TAG, "✅ 用户信息加载成功");
-                    } else {
-                        Log.w(TAG, "⚠️ 用户信息加载失败: " + processedResponse.getMessage());
-                        showLocalUserInfo();
-                    }
-                });
             }
 
             @Override
             public void onFailure(Call<ApiResponse<User>> call, Throwable t) {
-                // 检查Fragment状态
-                if (isViewDestroyed || binding == null || getActivity() == null) {
-                    Log.w(TAG, "⚠️ Fragment状态无效，跳过处理错误");
-                    return;
-                }
-
-                requireActivity().runOnUiThread(() -> {
-                    showLoading(false);
-                    Log.e(TAG, "💥 用户信息网络请求失败: " + t.getMessage());
-                    showLocalUserInfo();
-                });
+                showLoading(false);
+                Log.e(TAG, "💥 用户信息网络请求失败: " + t.getMessage());
+                showLocalUserInfo();
+                Toast.makeText(requireContext(), "网络请求失败", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -133,18 +107,12 @@ public class ProfileFragment extends Fragment {
     private void showLocalUserInfo() {
         Log.d(TAG, "📋 显示本地用户信息");
 
-        // 检查视图状态
-        if (isViewDestroyed || binding == null) {
-            Log.w(TAG, "⚠️ 视图已销毁，跳过显示本地信息");
-            return;
-        }
-
         // 从本地存储获取用户名显示
         String username = spManager.getSavedUsername();
         if (!username.isEmpty()) {
             User localUser = new User();
             localUser.setUsername(username);
-            localUser.setNickName(username); // 使用用户名作为昵称
+            localUser.setNickName(username);
             localUser.setEmail("点击刷新获取完整信息");
             displayUserInfo(localUser);
         }
@@ -153,33 +121,44 @@ public class ProfileFragment extends Fragment {
     }
 
     private void displayUserInfo(User user) {
-        // 重要：添加空检查
-        if (binding == null || isViewDestroyed) {
-            Log.w(TAG, "⚠️ Binding为空或视图已销毁，跳过显示用户信息");
-            return;
+        Log.d(TAG, "🖼️ 显示用户信息: " + user.getUsername());
+
+        binding.textUsername.setText(user.getUsername());
+        binding.textNickname.setText(user.getNickName());
+
+        // 邮箱显示处理：如果邮箱包含星号，添加提示
+        String email = user.getEmail();
+        if (email != null && email.contains("*")) {
+            binding.textEmail.setText(email);
+            binding.textEmail.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_info, 0);
+            binding.textEmail.setOnClickListener(v -> {
+                Toast.makeText(requireContext(), "掩码邮箱，编辑资料时可更新", Toast.LENGTH_SHORT).show();
+            });
+        } else {
+            binding.textEmail.setText(email);
+            binding.textEmail.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            binding.textEmail.setOnClickListener(null);
         }
 
-        try {
-            Log.d(TAG, "🖼️ 显示用户信息: " + user.getUsername());
+        if (user.getCreateTime() != null) {
+            String joinDate = formatJoinDate(user.getCreateTime());
+            binding.textJoinDate.setText("注册时间：" + joinDate);
+        } else {
+            binding.textJoinDate.setText("注册时间：未知");
+        }
 
-            binding.textUsername.setText(user.getUsername());
-            binding.textNickname.setText(user.getNickName());
-            binding.textEmail.setText(user.getEmail());
-
-            if (user.getCreateTime() != null) {
-                String joinDate = formatJoinDate(user.getCreateTime());
-                binding.textJoinDate.setText("注册时间：" + joinDate);
-            } else {
-                binding.textJoinDate.setText("注册时间：未知");
-            }
-
-            // 设置头像（如果有）
-            if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
-                // 使用Glide或Picasso加载头像
-                // Glide.with(this).load(user.getAvatar()).into(binding.imageAvatar);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "💥 显示用户信息时发生异常: " + e.getMessage());
+        // 加载头像
+        String avatarUrl = user.getAvatar(); // 确保这是从API返回的完整URL
+        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            // 使用Glide加载头像
+            Glide.with(this)
+                    .load(avatarUrl)
+                    .placeholder(R.drawable.ic_profile) // 默认头像
+                    .error(R.drawable.ic_profile)       // 加载失败时显示的头像
+                    .into(binding.imageAvatar);
+        } else {
+            // 如果头像URL为空，显示默认头像
+            binding.imageAvatar.setImageResource(R.drawable.ic_profile);
         }
     }
 
@@ -198,12 +177,6 @@ public class ProfileFragment extends Fragment {
     }
 
     private void showLoading(boolean show) {
-        // 检查视图状态
-        if (binding == null || isViewDestroyed) {
-            return;
-        }
-
-        // 这里可以显示或隐藏加载指示器
         if (show) {
             binding.textUsername.setText("加载中...");
             binding.textNickname.setText("");
@@ -215,28 +188,22 @@ public class ProfileFragment extends Fragment {
     private void setupClickListeners() {
         Log.d(TAG, "🔄 设置点击监听器");
 
-        if (binding == null) {
-            Log.w(TAG, "⚠️ Binding为空，跳过设置点击监听器");
-            return;
-        }
-
         // 编辑资料
         binding.cardEditProfile.setOnClickListener(v -> {
             Log.d(TAG, "👆 编辑资料被点击");
-            if (getActivity() == null) return;
-
-            Intent intent = new Intent(requireContext(), EditProfileActivity.class);
             if (currentUser != null) {
+                Intent intent = new Intent(requireContext(), EditProfileActivity.class);
                 intent.putExtra("user", currentUser);
+                startActivityForResult(intent, 1001);
+            } else {
+                Toast.makeText(requireContext(), "请先加载用户信息", Toast.LENGTH_SHORT).show();
+                loadUserInfo();
             }
-            startActivity(intent);
         });
 
         // 修改密码
         binding.cardChangePassword.setOnClickListener(v -> {
             Log.d(TAG, "👆 修改密码被点击");
-            if (getActivity() == null) return;
-
             Intent intent = new Intent(requireContext(), ChangePasswordActivity.class);
             startActivity(intent);
         });
@@ -245,7 +212,7 @@ public class ProfileFragment extends Fragment {
         binding.cardRefresh.setOnClickListener(v -> {
             Log.d(TAG, "👆 刷新数据被点击");
             loadUserInfo();
-            Toast.makeText(requireContext(), "数据刷新中...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "刷新中...", Toast.LENGTH_SHORT).show();
         });
 
         // 退出登录
@@ -265,6 +232,9 @@ public class ProfileFragment extends Fragment {
             localLogout();
             return;
         }
+
+        // 显示加载状态
+        binding.cardLogout.setEnabled(false);
 
         // 调用退出登录API
         apiService.logout().enqueue(new Callback<ApiResponse<Void>>() {
@@ -288,8 +258,6 @@ public class ProfileFragment extends Fragment {
         spManager.clearAll();
 
         // 跳转到登录页面
-        if (getActivity() == null) return;
-
         Intent intent = new Intent(requireContext(), com.example.todo.MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
@@ -300,18 +268,28 @@ public class ProfileFragment extends Fragment {
     }
 
     @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 1001 && resultCode == requireActivity().RESULT_OK) {
+            // 编辑资料成功后刷新数据
+            Log.d(TAG, "🔄 编辑资料成功，刷新用户信息");
+            loadUserInfo();
+        }
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         Log.d(TAG, "🔄 Fragment恢复，重新加载数据");
-        loadUserInfo(); // 重新加载用户信息
+        loadUserInfo();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        Log.d(TAG, "💀 Fragment视图被销毁");
-        isViewDestroyed = true;
         binding = null;
+        Log.d(TAG, "💀 Fragment视图被销毁");
     }
 
     // 公开方法供Activity调用

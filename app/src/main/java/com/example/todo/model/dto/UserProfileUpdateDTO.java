@@ -1,9 +1,10 @@
+// UserProfileUpdateDTO.java - 确保有这个字段
 package com.example.todo.model.dto;
 
 public class UserProfileUpdateDTO {
     private String username;
     private String nickName;
-    private Integer avatarFileId;
+    private Integer avatarFileId;  // 确保有这个字段
     private String email;
 
     public UserProfileUpdateDTO() {}

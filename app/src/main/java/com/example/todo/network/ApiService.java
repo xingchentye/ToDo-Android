@@ -6,9 +6,11 @@ import com.example.todo.model.Task;
 import com.example.todo.model.User;
 import com.example.todo.model.dto.*;
 import com.example.todo.model.response.ApiResponse;
+import com.example.todo.model.vo.FileUploadVO;
 import com.example.todo.model.vo.UserLoginVO;
 import com.example.todo.model.vo.UserRefreshTokenVO;
 
+import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.*;
 
@@ -237,13 +239,12 @@ public interface ApiService {
     Call<ApiResponse<Void>> deleteTask(@Path("id") int id);
 
     // ==================== 文件上传 ====================
-
     /**
      * 上传文件
      * @param file 文件
      * @return 上传结果
      */
-//    @Multipart
-//    @POST("/files/upload")
-//    Call<ApiResponse<FileUploadResponse>> uploadFile(@Part MultipartBody.Part file);
+    @Multipart
+    @POST("/file/upload")
+    Call<ApiResponse<FileUploadVO>> uploadFile(@Part MultipartBody.Part file);
 }

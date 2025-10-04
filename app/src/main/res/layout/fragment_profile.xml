@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
+    android:background="@color/surface"
     android:fillViewport="true">
 
     <LinearLayout
@@ -17,7 +17,8 @@
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="2dp">
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/surfaceVariant">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -37,7 +38,9 @@
                         android:layout_width="80dp"
                         android:layout_height="80dp"
                         android:src="@drawable/ic_profile"
-                        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Full" />
+                        android:contentDescription="用户头像"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Full"
+                        android:scaleType="centerCrop" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -52,7 +55,9 @@
                             android:layout_height="wrap_content"
                             android:text="用户名"
                             android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
-                            android:textColor="@color/onSurface" />
+                            android:textColor="@color/onSurface"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
 
                         <TextView
                             android:id="@+id/textNickname"
@@ -61,7 +66,9 @@
                             android:layout_marginTop="4dp"
                             android:text="昵称"
                             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:textColor="@color/onSurfaceVariant" />
+                            android:textColor="@color/onSurfaceVariant"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
 
                         <TextView
                             android:id="@+id/textEmail"
@@ -70,7 +77,9 @@
                             android:layout_marginTop="4dp"
                             android:text="邮箱"
                             android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                            android:textColor="@color/onSurfaceVariant" />
+                            android:textColor="@color/onSurfaceVariant"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
 
                     </LinearLayout>
 
@@ -104,7 +113,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="1dp">
+                app:cardElevation="1dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -145,7 +157,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="1dp">
+                app:cardElevation="1dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -186,7 +201,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="1dp">
+                app:cardElevation="1dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -228,7 +246,10 @@
                 app:cardCornerRadius="12dp"
                 app:cardElevation="1dp"
                 app:strokeColor="@color/error"
-                app:strokeWidth="1dp">
+                app:strokeWidth="1dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"

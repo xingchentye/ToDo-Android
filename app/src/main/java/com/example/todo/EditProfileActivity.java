@@ -1,3 +1,4 @@
+// EditProfileActivity.java - 修复头像显示
 package com.example.todo;
 
 import android.content.Intent;
@@ -7,21 +8,25 @@ import android.util.Log;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import com.bumptech.glide.Glide;
 import com.example.todo.databinding.ActivityEditProfileBinding;
 import com.example.todo.model.User;
 import com.example.todo.model.dto.UserProfileUpdateDTO;
 import com.example.todo.model.response.ApiResponse;
+import com.example.todo.model.vo.FileUploadVO;
 import com.example.todo.network.ApiService;
 import com.example.todo.network.RetrofitClient;
 import com.example.todo.storage.SharedPreferencesManager;
 import com.example.todo.utils.ApiResponseHandler;
+import com.example.todo.utils.FileUploadUtils;
 import com.example.todo.utils.NetworkUtils;
+import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * 编辑资料Activity
+ * 编辑资料Activity - 修复头像显示
  */
 public class EditProfileActivity extends AppCompatActivity {
     private static final String TAG = "✏️ 编辑资料Activity";
@@ -33,6 +38,10 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private static final int PICK_IMAGE_REQUEST = 1001;
     private Uri selectedImageUri;
+    private Integer uploadedAvatarFileId = null;
+
+    // 标记是否正在上传头像
+    private boolean isUploadingAvatar = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,8 +98,41 @@ public class EditProfileActivity extends AppCompatActivity {
         if (currentUser != null) {
             binding.editTextUsername.setText(currentUser.getUsername());
             binding.editTextNickname.setText(currentUser.getNickName());
-            binding.editTextEmail.setText(currentUser.getEmail());
+
+            // 邮箱处理：如果邮箱包含星号（掩码），则清空输入框，让用户重新输入
+            String email = currentUser.getEmail();
+            if (email != null && email.contains("*")) {
+                Log.d(TAG, "📧 检测到掩码邮箱，清空输入框");
+                binding.editTextEmail.setText("");
+                binding.editTextEmail.setHint("请输入完整邮箱地址");
+            } else {
+                binding.editTextEmail.setText(email);
+            }
+
+            // 加载当前头像 - 修复版本
+            loadCurrentAvatar();
+
             Log.d(TAG, "✅ 表单数据填充完成");
+        }
+    }
+
+    /**
+     * 加载当前头像
+     */
+    private void loadCurrentAvatar() {
+        Log.d(TAG, "🖼️ 加载当前头像");
+
+        String avatarUrl = currentUser.getAvatar();
+        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            Log.d(TAG, "🖼️ 加载头像URL: " + avatarUrl);
+            Glide.with(this)
+                    .load(avatarUrl)
+                    .placeholder(R.drawable.ic_profile)
+                    .error(R.drawable.ic_profile)
+                    .into(binding.imageAvatar);
+        } else {
+            Log.d(TAG, "🖼️ 使用默认头像");
+            binding.imageAvatar.setImageResource(R.drawable.ic_profile);
         }
     }
 
@@ -128,31 +170,100 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
+        // 邮箱格式验证
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.editTextEmail.setError("请输入有效的邮箱地址");
+            Log.w(TAG, "❌ 邮箱格式无效");
+            return;
+        }
+
         if (!NetworkUtils.isNetworkAvailable(this)) {
             Toast.makeText(this, "网络不可用", Toast.LENGTH_SHORT).show();
             Log.w(TAG, "❌ 网络不可用，无法保存资料");
             return;
         }
 
-        // 创建更新DTO
-        UserProfileUpdateDTO updateDTO = new UserProfileUpdateDTO(username, nickname, email);
-        // 如果有头像文件ID，设置avatarFileId
-        // updateDTO.setAvatarFileId(avatarFileId);
-
-        Log.d(TAG, "📦 创建资料更新数据: " + updateDTO.toString());
-
-        updateProfile(updateDTO);
+        // 如果有新选择的头像且尚未上传，先上传头像
+        if (selectedImageUri != null && uploadedAvatarFileId == null && !isUploadingAvatar) {
+            Log.d(TAG, "📤 检测到新头像，先上传头像");
+            uploadImage(selectedImageUri);
+        } else {
+            // 直接更新资料
+            updateProfileData(username, nickname, email);
+        }
     }
 
-    private void updateProfile(UserProfileUpdateDTO updateDTO) {
+    private void uploadImage(Uri imageUri) {
+        Log.d(TAG, "🔄 开始上传头像");
+
+        isUploadingAvatar = true;
+        showLoading(true, "上传头像中...");
+
+        // 转换Uri为MultipartPart
+        MultipartBody.Part filePart = FileUploadUtils.uriToMultipartPart(this, imageUri, "file");
+        if (filePart == null) {
+            Log.e(TAG, "❌ 文件转换失败");
+            isUploadingAvatar = false;
+            showLoading(false, "保存");
+            Toast.makeText(this, "文件处理失败，请选择其他图片", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        apiService.uploadFile(filePart).enqueue(new Callback<ApiResponse<FileUploadVO>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<FileUploadVO>> call, Response<ApiResponse<FileUploadVO>> response) {
+                isUploadingAvatar = false;
+                ApiResponse<FileUploadVO> processedResponse = ApiResponseHandler.processResponse(response);
+
+                if (processedResponse.isSuccess() && processedResponse.getData() != null) {
+                    FileUploadVO uploadVO = processedResponse.getData();
+                    uploadedAvatarFileId = uploadVO.getFileId();
+
+                    Log.d(TAG, "✅ 头像上传成功，文件ID: " + uploadedAvatarFileId);
+
+                    // 头像上传成功后更新资料
+                    String username = binding.editTextUsername.getText().toString().trim();
+                    String nickname = binding.editTextNickname.getText().toString().trim();
+                    String email = binding.editTextEmail.getText().toString().trim();
+                    updateProfileData(username, nickname, email);
+
+                } else {
+                    showLoading(false, "保存");
+                    Log.w(TAG, "⚠️ 头像上传失败: " + processedResponse.getMessage());
+                    Toast.makeText(EditProfileActivity.this, "头像上传失败: " + processedResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<FileUploadVO>> call, Throwable t) {
+                isUploadingAvatar = false;
+                showLoading(false, "保存");
+                Log.e(TAG, "💥 头像上传网络请求失败: " + t.getMessage());
+                Toast.makeText(EditProfileActivity.this, "头像上传失败，请重试", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void updateProfileData(String username, String nickname, String email) {
         Log.d(TAG, "✏️ 更新用户资料");
 
-        showLoading(true);
+        showLoading(true, "保存中...");
+
+        // 创建更新DTO
+        UserProfileUpdateDTO updateDTO = new UserProfileUpdateDTO(username, nickname, email);
+
+        // 如果有上传的头像文件ID，设置avatarFileId
+        if (uploadedAvatarFileId != null) {
+            updateDTO.setAvatarFileId(uploadedAvatarFileId);
+            Log.d(TAG, "📦 设置头像文件ID: " + uploadedAvatarFileId);
+        }
+
+        Log.d(TAG, "📦 创建资料更新数据: " + updateDTO.toString());
 
         apiService.updateUser(updateDTO).enqueue(new Callback<ApiResponse<Void>>() {
             @Override
             public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
-                showLoading(false);
+                showLoading(false, "保存");
 
                 ApiResponse<Void> processedResponse = ApiResponseHandler.processResponse(response);
 
@@ -177,16 +288,16 @@ public class EditProfileActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
-                showLoading(false);
+                showLoading(false, "保存");
                 Log.e(TAG, "💥 资料更新网络请求失败: " + t.getMessage());
                 Toast.makeText(EditProfileActivity.this, "网络请求失败", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void showLoading(boolean show) {
+    private void showLoading(boolean show, String text) {
         binding.buttonSave.setEnabled(!show);
-        binding.buttonSave.setText(show ? "保存中..." : "保存");
+        binding.buttonSave.setText(show ? text : "保存");
 
         if (show) {
             binding.buttonSave.setIcon(null);
@@ -201,11 +312,18 @@ public class EditProfileActivity extends AppCompatActivity {
 
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
             selectedImageUri = data.getData();
-            binding.imageAvatar.setImageURI(selectedImageUri);
-            Log.d(TAG, "🖼️ 图片选择成功: " + selectedImageUri.toString());
 
-            // 这里可以上传图片到服务器并获取文件ID
-            // uploadImage(selectedImageUri);
+            // 立即显示选中的图片
+            Glide.with(this)
+                    .load(selectedImageUri)
+                    .placeholder(R.drawable.ic_profile)
+                    .error(R.drawable.ic_profile)
+                    .into(binding.imageAvatar);
+
+            // 重置上传的文件ID，表示有新图片需要上传
+            uploadedAvatarFileId = null;
+
+            Log.d(TAG, "🖼️ 图片选择成功: " + selectedImageUri.toString());
         }
     }
 

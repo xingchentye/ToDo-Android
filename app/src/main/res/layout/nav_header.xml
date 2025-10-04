@@ -7,7 +7,9 @@
     android:gravity="bottom"
     android:orientation="vertical"
     android:padding="16dp"
-    android:theme="@style/ThemeOverlay.Material3.Dark">
+    android:theme="@style/ThemeOverlay.Material3.Dark"
+    android:clickable="true"
+    android:focusable="true">
 
     <ImageView
         android:id="@+id/imageAvatar"
@@ -16,7 +18,8 @@
         android:layout_marginBottom="8dp"
         android:contentDescription="用户头像"
         android:src="@drawable/ic_profile"
-        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Full" />
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Full"
+        android:scaleType="centerCrop" />
 
     <TextView
         android:id="@+id/textUsername"
@@ -24,7 +27,9 @@
         android:layout_height="wrap_content"
         android:text="用户名"
         android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-        android:textColor="@color/white" />
+        android:textColor="@color/white"
+        android:maxLines="1"
+        android:ellipsize="end" />
 
     <TextView
         android:id="@+id/textEmail"
@@ -32,6 +37,8 @@
         android:layout_height="wrap_content"
         android:text="user@example.com"
         android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-        android:textColor="@color/white" />
+        android:textColor="@color/white"
+        android:maxLines="1"
+        android:ellipsize="end" />
 
 </LinearLayout>
