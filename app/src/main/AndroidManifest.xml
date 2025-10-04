@@ -46,7 +46,9 @@
             android:name=".EditProfileActivity"
             android:exported="false"
             android:theme="@style/Theme.ToDo" />
-
+        <activity
+            android:name=".TaskDetailActivity"
+            android:theme="@style/Theme.ToDo" />
     </application>
 
 </manifest>

@@ -84,13 +84,14 @@
                 android:ellipsize="end" />
 
             <!-- 任务元信息 -->
-            <LinearLayout
+            <com.google.android.flexbox.FlexboxLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:layout_marginStart="28dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                app:flexWrap="wrap"
+                app:alignItems="flex_start"
+                app:flexDirection="row">
 
                 <!-- 分类 -->
                 <com.google.android.material.chip.Chip
@@ -98,6 +99,8 @@
                     style="@style/Widget.Material3.Chip.Assist"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginBottom="4dp"
                     android:text="工作"
                     app:chipIcon="@drawable/ic_category"
                     app:chipIconTint="@color/primary" />
@@ -108,7 +111,8 @@
                     style="@style/Widget.Material3.Chip.Assist"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginBottom="4dp"
                     android:text="明天"
                     app:chipIcon="@drawable/ic_calendar"
                     app:chipIconTint="@color/primary" />
@@ -119,12 +123,12 @@
                     style="@style/Widget.Material3.Chip.Assist"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginBottom="4dp"
                     android:text="2个标签"
                     app:chipIcon="@drawable/ic_tag"
                     app:chipIconTint="@color/primary" />
 
-            </LinearLayout>
+            </com.google.android.flexbox.FlexboxLayout>
 
         </LinearLayout>
 

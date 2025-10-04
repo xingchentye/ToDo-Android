@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.todo.CreateTaskActivity;
 import com.example.todo.R;
+import com.example.todo.TaskDetailActivity;
 import com.example.todo.adapters.TaskAdapter;
 import com.example.todo.databinding.FragmentTaskBinding;
 import com.example.todo.model.Task;
@@ -249,7 +250,9 @@ public class TaskFragment extends Fragment {
 
     private void openTaskDetail(Task task) {
         Log.d(TAG, "📖 打开任务详情: " + task.getTitle());
-        Toast.makeText(requireContext(), "打开任务详情: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(requireContext(), TaskDetailActivity.class);
+        intent.putExtra("task", task);
+        startActivityForResult(intent, 1003); // 使用不同的requestCode
     }
 
     private void editTask(Task task) {
