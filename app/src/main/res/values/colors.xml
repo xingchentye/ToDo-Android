@@ -216,4 +216,26 @@
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
+
+    <!-- 优先级颜色 -->
+    <color name="priority_high">#FF5252</color>
+    <color name="priority_medium">#FF9800</color>
+    <color name="priority_low">#4CAF50</color>
+
+    <!-- 状态颜色 -->
+    <color name="status_todo">#2196F3</color>
+    <color name="status_done">#4CAF50</color>
+
+    <!-- 其他UI颜色 -->
+    <color name="outline">#79747E</color>
+
+    <color name="tertiary">#4CAF50</color>
+
+    <!-- 导航菜单颜色 -->
+    <color name="nav_menu_icon">#49454F</color>
+    <color name="nav_menu_icon_selected">#6750A4</color>
+    <color name="nav_menu_text">#1C1B1F</color>
+    <color name="nav_menu_text_selected">#6750A4</color>
+
+
 </resources>

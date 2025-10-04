@@ -799,8 +799,8 @@ public class RegisterActivity extends AppCompatActivity {
         Log.d(TAG, "🚀 开始跳转到主页面...");
 
         // TODO: 这里暂时注释掉，等你的HomeActivity开发完成后再取消注释
-        // Intent intent = new Intent(this, HomeActivity.class);
-        // startActivity(intent);
+         Intent intent = new Intent(this, HomeActivity.class);
+         startActivity(intent);
         Log.d(TAG, "✅ 主页面Activity已启动");
 
         finish();

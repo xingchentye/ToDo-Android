@@ -6,6 +6,11 @@ android {
     namespace 'com.example.todo'
     compileSdk 36
 
+    buildFeatures {
+        dataBinding true
+        viewBinding true
+    }
+
     defaultConfig {
         applicationId "com.example.todo"
         minSdk 24
@@ -43,6 +48,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.4.2'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
 
     implementation libs.appcompat
     implementation libs.material

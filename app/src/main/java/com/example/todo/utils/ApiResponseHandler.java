@@ -105,7 +105,7 @@ public class ApiResponseHandler {
                 enhancedMessage = "请求过于频繁，请稍后重试";
                 break;
             case 500:
-                enhancedMessage = "服务器内部错误，请稍后重试";
+                enhancedMessage = "服务端出现未知异常! 请稍后再试或提交反馈至开发组!";
                 break;
             case 502:
             case 503:

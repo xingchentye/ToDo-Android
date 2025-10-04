@@ -31,7 +31,7 @@ import retrofit2.Response;
  * 处理用户登录逻辑和界面交互，支持令牌自动刷新
  */
 public class MainActivity extends AppCompatActivity implements TokenManager.TokenRefreshListener {
-    private static final String TAG = "🚀 主Activity"; // 日志标签
+    private static final String TAG = "🚀 登录Activity"; // 日志标签
 
     // 界面组件
     private TextInputEditText usernameEditText;
@@ -57,6 +57,9 @@ public class MainActivity extends AppCompatActivity implements TokenManager.Toke
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "🎬 Activity创建开始");
+
+        // 初始化RetrofitClient
+        RetrofitClient.init(this);
 
         setContentView(R.layout.page_login);
         Log.d(TAG, "✅ 布局文件加载完成");
@@ -549,8 +552,8 @@ public class MainActivity extends AppCompatActivity implements TokenManager.Toke
         Log.d(TAG, "🚀 开始跳转到主页面...");
 
 //         TODO: 这里暂时注释掉，HomeActivity开发完成后再取消注释
-//         Intent intent = new Intent(this, HomeActivity.class);
-//         startActivity(intent);
+         Intent intent = new Intent(this, HomeActivity.class);
+         startActivity(intent);
          Log.d(TAG, "✅ 主页面Activity已启动");
 
          finish();
